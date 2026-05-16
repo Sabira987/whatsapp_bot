@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp Бот — Басқару панелі</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;min-height:100vh;color:#1a1a2e}
+  .header{background:#075E54;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+  .header-icon{width:40px;height:40px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .header h1{font-size:18px;font-weight:600}
+  .header p{font-size:12px;opacity:0.8}
+  .status-dot{width:10px;height:10px;border-radius:50%;background:#25D366;margin-left:auto;box-shadow:0 0 6px #25D366}
+  .status-dot.off{background:#aaa;box-shadow:none}
+  .container{max-width:800px;margin:0 auto;padding:16px}
+  .card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+  .card-title{font-size:14px;font-weight:600;color:#075E54;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  .tabs{display:flex;gap:6px;margin-bottom:16px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+  .tab{flex:1;padding:9px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;background:transparent;color:#666;transition:all 0.2s}
+  .tab.active{background:#25D366;color:#fff}
+  .panel{display:none}
+  .panel.active{display:block}
+  label{font-size:12px;color:#666;display:block;margin-bottom:4px;margin-top:10px}
+  label:first-child{margin-top:0}
+  input,textarea,select{width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;color:#1a1a2e;background:#fafafa;transition:border 0.2s;font-family:inherit}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:#25D366;background:#fff}
+  textarea{resize:vertical;min-height:80px}
+  .btn{padding:10px 18px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.2s}
+  .btn-green{background:#25D366;color:#fff}
+  .btn-green:hover{background:#1ea855}
+  .btn-red{background:#ff4757;color:#fff}
+  .btn-outline{background:#fff;border:1px solid #e0e0e0;color:#333}
+  .btn-outline:hover{border-color:#25D366;color:#25D366}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .product-item{border:1px solid #f0f0f0;border-radius:10px;padding:12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
+  .product-thumb{width:50px;height:50px;border-radius:8px;background:#f0f2f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+  .product-thumb img{width:100%;height:100%;object-fit:cover}
+  .product-info{flex:1;min-width:0}
+  .product-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .product-price{color:#25D366;font-weight:600;font-size:13px}
+  .product-desc{color:#888;font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .product-actions{display:flex;gap:6px;flex-shrink:0}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;padding:16px}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .modal-header h3{font-size:16px;font-weight:600}
+  .close-btn{background:none;border:none;font-size:24px;cursor:pointer;color:#999;line-height:1}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .toggle{width:48px;height:26px;background:#e0e0e0;border-radius:13px;cursor:pointer;position:relative;transition:background 0.2s;border:none}
+  .toggle.on{background:#25D366}
+  .toggle::after{content:'';width:20px;height:20px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+  .toggle.on::after{left:25px}
+  .range-row{display:flex;align-items:center;gap:10px}
+  input[type=range]{padding:0;border:none;background:transparent;accent-color:#25D366}
+  .range-val{font-weight:600;color:#25D366;min-width:32px;text-align:right;font-size:16px}
+  .save-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:12px 20px;display:flex;gap:10px;align-items:center;box-shadow:0 -2px 8px rgba(0,0,0,0.08);z-index:50}
+  .toast{position:fixed;top:20px;right:20px;background:#25D366;color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none}
+  .toast.show{opacity:1}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+  .badge-green{background:#e8f5e9;color:#2e7d32}
+  .badge-gray{background:#f5f5f5;color:#757575}
+  .instructions{background:#e8f5e9;border-left:3px solid #25D366;border-radius:0 8px 8px 0;padding:12px;font-size:13px;line-height:1.6;color:#1b5e20}
+  .instructions code{background:#c8e6c9;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px}
+  .step{display:flex;gap:10px;margin-bottom:10px}
+  .step-num{width:24px;height:24px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+  .step-text{font-size:13px;line-height:1.5;color:#333;padding-top:2px}
+  .step-text a{color:#075E54;font-weight:500}
+  h2.section{font-size:13px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">📱</div>
+  <div>
+    <h1>WhatsApp Бот</h1>
+    <p>Үй заттары дүкені / Магазин товаров для дома</p>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <span id="statusText" style="font-size:13px;opacity:0.9">Белсенді</span>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('products')">🛋 Тауарлар</button>
+    <button class="tab" onclick="showTab('settings')">⚙️ Баптаулар</button>
+    <button class="tab" onclick="showTab('texts')">✏️ Мәтіндер</button>
+    <button class="tab" onclick="showTab('setup')">🚀 Қосу</button>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="panel active" id="panel-products">
+    <div class="card">
+      <div class="card-title">🛋 Өнімдер / Товары
+        <button class="btn btn-green btn-sm" style="margin-left:auto" onclick="openProductModal()">+ Қосу</button>
+      </div>
+      <div id="productList"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <div class="card-title">⚙️ Бот баптаулары / Настройки</div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:500;font-size:14px">Бот жұмысы / Работа бота</div>
+          <div style="font-size:12px;color:#888">Қосу немесе өшіру / Включить или отключить</div>
+        </div>
+        <button class="toggle on" id="botToggle" onclick="toggleBot()"></button>
+      </div>
+      <label>Кідіріс уақыты / Задержка ответа</label>
+      <div class="range-row">
+        <span style="font-size:13px;color:#888">0с</span>
+        <input type="range" min="0" max="60" value="15" id="delaySlider" oninput="document.getElementById('delayVal').textContent=this.value+'с'">
+        <span style="font-size:13px;color:#888">60с</span>
+        <span class="range-val" id="delayVal">15с</span>
+      </div>
+      <label>Тіл / Язык</label>
+      <select id="langSelect">
+        <option value="both">Қазақша + Орысша / Казахский + Русский</option>
+        <option value="kz">Тек қазақша / Только казахский</option>
+        <option value="ru">Тек орысша / Только русский</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TEXTS -->
+  <div class="panel" id="panel-texts">
+    <div class="card">
+      <div class="card-title">✏️ Бот мәтіндері / Тексты бота</div>
+      <label>👋 Сәлемдесу / Приветствие</label>
+      <textarea id="txt-greeting" rows="5"></textarea>
+      <label>🚚 Жеткізу / Доставка</label>
+      <textarea id="txt-delivery" rows="3"></textarea>
+      <label>📞 Байланыс / Контакты</label>
+      <textarea id="txt-contacts" rows="3"></textarea>
+      <label>❓ Белгісіз сұраққа жауап / Ответ на неизвестный вопрос</label>
+      <textarea id="txt-unknown" rows="3"></textarea>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="panel" id="panel-setup">
+    <div class="card">
+      <div class="card-title">🚀 WhatsApp-қа қосу нұсқаулығы</div>
+
+      <h2 class="section">1-қадам — Twilio тіркелу</h2>
+      <div class="step"><div class="step-num">1</div><div class="step-text"><a href="https://www.twilio.com/try-twilio" target="_blank">twilio.com/try-twilio</a> сайтына кіріп тегін тіркеліңіз</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">Console-ға кіріп <strong>Account SID</strong> және <strong>Auth Token</strong> алыңыз</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">Messaging → Try it out → <strong>Send a WhatsApp message</strong> бетіне өтіңіз</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">Sandbox нөміріне <code>join [ваш-код]</code> жіберіп іске қосыңыз</div></div>
+
+      <h2 class="section">2-қадам — Railway-ге орналастыру</h2>
+      <div class="step"><div class="step-num">1</div><div class="step-text"><a href="https://railway.app" target="_blank">railway.app</a> — GitHub аккаунтыңызбен тіркеліңіз</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">New Project → Deploy from GitHub repo → файлдарды жүктеңіз</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">Variables бөлімінде осы айнымалыларды қосыңыз:<br><code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code>, <code>TWILIO_WHATSAPP_NUMBER=+14155238886</code></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">Deploy болғаннан кейін URL-ді алыңыз (мысалы: <code>https://bot-xxx.railway.app</code>)</div></div>
+
+      <h2 class="section">3-қадам — Webhook орнату</h2>
+      <div class="step"><div class="step-num">1</div><div class="step-text">Twilio Console → WhatsApp Sandbox Settings → Webhook URL-ге:<br><code>https://сіздің-домен.railway.app/webhook</code> жазыңыз</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">HTTP POST таңдаңыз және сақтаңыз</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">Дайын! Клиент жазса бот <strong>15 секундтан</strong> кейін жауап береді 🎉</div></div>
+
+      <div class="instructions" style="margin-top:16px">
+        💡 <strong>Маңызды:</strong> Sandbox режимде тек сіздің нөмірлеріңіз жазы ала алады. Нақты клиенттерге WhatsApp Business API-ді іске қосу керек (Meta-да тіркелу).
+      </div>
+    </div>
+  </div>
+
+  <div style="height:70px"></div>
+</div>
+
+<!-- Save bar -->
+<div class="save-bar">
+  <span style="font-size:13px;color:#888;flex:1">Өзгерістер / Изменения</span>
+  <button class="btn btn-outline" onclick="loadFromServer()">↺ Жаңарту</button>
+  <button class="btn btn-green" onclick="saveAll()">💾 Сақтау</button>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Өнім қосу / Добавить товар</h3>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <label>Атауы қазақша / Название (каз)</label>
+    <input type="text" id="mNameKz" placeholder="Жұмсақ диван">
+    <label>Атауы орысша / Название (рус)</label>
+    <input type="text" id="mNameRu" placeholder="Мягкий диван">
+    <label>Баға / Цена (₸)</label>
+    <input type="number" id="mPrice" placeholder="85000">
+    <label>Сипаттама / Описание</label>
+    <textarea id="mDesc" rows="2" placeholder="Кеңірек сипаттама / Подробное описание"></textarea>
+    <label>Фото URL</label>
+    <input type="url" id="mPhoto" placeholder="https://example.com/photo.jpg">
+    <label>Видео URL</label>
+    <input type="url" id="mVideo" placeholder="https://example.com/video.mp4">
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-green" style="flex:1" onclick="saveProduct()">Сақтау / Сохранить</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Болдырмау</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let appData = null;
+let editingId = null;
+
+async function loadFromServer() {
+  try {
+    const res = await fetch('/api/data');
+    appData = await res.json();
+    renderAll();
+  } catch(e) {
+    // fallback demo data
+    appData = {
+      botActive: true, delaySeconds: 15, language: 'both',
+      texts: { greeting: 'Сәлеметсіз бе! 👋', contacts: '📞 +7 700 000 00 00', delivery: '🚚 500₸', unknown: 'Менеджер хабарласады / Менеджер свяжется' },
+      products: [
+        {id:1, name:'Жұмсақ диван / Мягкий диван', price:85000, desc:'3 адамдық', photo:'', video:''},
+        {id:2, name:'Ас үй үстелі / Кухонный стол', price:32000, desc:'140×80 см', photo:'', video:''}
+      ]
+    };
+    renderAll();
+  }
+}
+
+function renderAll() {
+  if (!appData) return;
+  // Settings
+  const toggle = document.getElementById('botToggle');
+  toggle.className = 'toggle ' + (appData.botActive ? 'on' : '');
+  document.getElementById('statusDot').className = 'status-dot ' + (appData.botActive ? '' : 'off');
+  document.getElementById('statusText').textContent = appData.botActive ? 'Белсенді' : 'Өшірілген';
+  document.getElementById('delaySlider').value = appData.delaySeconds;
+  document.getElementById('delayVal').textContent = appData.delaySeconds + 'с';
+  document.getElementById('langSelect').value = appData.language;
+  // Texts
+  const t = appData.texts;
+  document.getElementById('txt-greeting').value = t.greeting || '';
+  document.getElementById('txt-delivery').value = t.delivery || '';
+  document.getElementById('txt-contacts').value = t.contacts || '';
+  document.getElementById('txt-unknown').value = t.unknown || '';
+  // Products
+  renderProducts();
+}
+
+function renderProducts() {
+  const list = document.getElementById('productList');
+  list.innerHTML = '';
+  if (!appData.products.length) {
+    list.innerHTML = '<p style="text-align:center;color:#aaa;padding:20px;font-size:14px">Тауар жоқ / Товаров нет</p>';
+    return;
+  }
+  appData.products.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'product-item';
+    el.innerHTML = `
+      <div class="product-thumb">
+        ${p.photo ? `<img src="${p.photo}" onerror="this.parentNode.textContent='🛋'">` : '🛋'}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">${p.price.toLocaleString()}₸</div>
+        <div class="product-desc">${p.desc}</div>
+        ${p.video ? '<span class="badge badge-green">📹 Видео</span>' : ''}
+      </div>
+      <div class="product-actions">
+        <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">✏️</button>
+        <button class="btn btn-sm" style="background:#fff0f0;color:#ff4757;border:1px solid #ffd0d0" onclick="deleteProduct(${p.id})">🗑</button>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+function toggleBot() {
+  appData.botActive = !appData.botActive;
+  renderAll();
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function openProductModal(id) {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Өнім қосу / Добавить товар';
+  ['mNameKz','mNameRu','mPrice','mDesc','mPhoto','mVideo'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('productModal').classList.add('open');
+}
+
+function editProduct(id) {
+  editingId = id;
+  const p = appData.products.find(x => x.id === id);
+  document.getElementById('modalTitle').textContent = 'Өнімді өзгерту / Редактировать';
+  const parts = p.name.split('/').map(s => s.trim());
+  document.getElementById('mNameKz').value = parts[0] || '';
+  document.getElementById('mNameRu').value = parts[1] || '';
+  document.getElementById('mPrice').value = p.price;
+  document.getElementById('mDesc').value = p.desc;
+  document.getElementById('mPhoto').value = p.photo;
+  document.getElementById('mVideo').value = p.video;
+  document.getElementById('productModal').classList.add('open');
+}
+
+function deleteProduct(id) {
+  if (!confirm('Өнімді жою / Удалить товар?')) return;
+  appData.products = appData.products.filter(x => x.id !== id);
+  renderProducts();
+}
+
+function saveProduct() {
+  const nameKz = document.getElementById('mNameKz').value.trim();
+  const nameRu = document.getElementById('mNameRu').value.trim();
+  const price = parseInt(document.getElementById('mPrice').value) || 0;
+  const desc = document.getElementById('mDesc').value.trim();
+  const photo = document.getElementById('mPhoto').value.trim();
+  const video = document.getElementById('mVideo').value.trim();
+  if (!nameKz) { alert('Атауын жазыңыз / Введите название'); return; }
+  const name = nameRu ? `${nameKz} / ${nameRu}` : nameKz;
+  if (editingId) {
+    const p = appData.products.find(x => x.id === editingId);
+    Object.assign(p, {name, price, desc, photo, video});
+  } else {
+    appData.products.push({id: Date.now(), name, price, desc, photo, video});
+  }
+  closeModal();
+  renderProducts();
+}
+
+function closeModal() {
+  document.getElementById('productModal').classList.remove('open');
+}
+
+async function saveAll() {
+  // Collect current values
+  appData.botActive = document.getElementById('botToggle').classList.contains('on');
+  appData.delaySeconds = parseInt(document.getElementById('delaySlider').value);
+  appData.language = document.getElementById('langSelect').value;
+  appData.texts = {
+    greeting: document.getElementById('txt-greeting').value,
+    delivery: document.getElementById('txt-delivery').value,
+    contacts: document.getElementById('txt-contacts').value,
+    unknown: document.getElementById('txt-unknown').value
+  };
+  try {
+    await fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(appData) });
+    showToast('✅ Сақталды / Сохранено!');
+  } catch(e) {
+    showToast('⚠️ Желі қатесі / Ошибка сети');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadFromServer();
+</script>
+</body>
+</html>
