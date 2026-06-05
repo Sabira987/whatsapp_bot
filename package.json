@@ -1,7 +1,7 @@
 {
-  "name": "whatsapp_bot",
+  "name": "whatsapp-home-store-bot",
   "version": "1.0.0",
-  "description": "WhatsApp clothing store bot",
+  "description": "WhatsApp chatbot for home goods store",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "twilio": "^4.19.0",
     "body-parser": "^1.20.2",
-    "multer": "^1.4.5-lts.1"
+    "twilio": "^4.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
-
-
